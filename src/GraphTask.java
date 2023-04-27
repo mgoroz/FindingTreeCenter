@@ -9,17 +9,68 @@ public class GraphTask {
    public static void main (String[] args) {
       GraphTask a = new GraphTask();
       a.run();
-      throw new RuntimeException ("Nothing implemented yet!"); // delete this
    }
 
    /** Actual main method to run examples and everything. */
    public void run() {
-      Graph g = new Graph ("G");
-      g.createRandomSimpleGraph (6, 9);
-      System.out.println (g);
+      Graph g = new Graph("G");
+      g.createRandomSimpleGraph(6, 9);
+      System.out.println("Initial Graph:");
+      System.out.println(g.toString());
 
-      // TODO!!! Your experiments here
+      // Test case with a tree that has two centers
+
+      Graph g2 = new Graph("G2");
+      Vertex v1 = g2.createVertex("v1");
+      Vertex v2 = g2.createVertex("v2");
+      Vertex v3 = g2.createVertex("v3");
+      Vertex v4 = g2.createVertex("v4");
+
+      g2.createArc("a1", v1, v2);
+      g2.createArc("a2", v2, v1);
+      g2.createArc("a3", v2, v3);
+      g2.createArc("a4", v3, v2);
+      g2.createArc("a5", v3, v4);
+      g2.createArc("a6", v4, v3);
+
+      System.out.println("Example 2:");
+      System.out.println(g2.toString());
+
+      List<Vertex> centers2 = g2.findCenter();
+      System.out.println("Centers: " + centers2);
+
+      int[][] testCases = {
+              {6, 5},
+              {10, 9},
+              {50, 49},
+              {100, 99},
+              {2000, 1999},
+      };
+
+      for (int[] testCase : testCases) {
+         int vertices = testCase[0];
+         int edges = testCase[1];
+         System.out.println("Testing a graph with " + vertices + " vertices and " + edges + " edges.");
+
+         Graph testGraph = new Graph("TestGraph");
+         testGraph.createRandomTree(vertices);
+
+         if (vertices != 2000) {
+            System.out.println("Graph representation:");
+            System.out.println(testGraph.toString());
+         }
+
+         long startTime = System.currentTimeMillis();
+         List<Vertex> centers = testGraph.findCenter();
+         long endTime = System.currentTimeMillis();
+
+         System.out.println("Centers: " + centers);
+         System.out.println("Execution time: " + (endTime - startTime) + " ms");
+         System.out.println();
+      }
    }
+
+
 
    // TODO!!! add javadoc relevant to your problem
    class Vertex {
@@ -227,7 +278,67 @@ public class GraphTask {
          }
       }
 
-      // TODO!!! Your Graph methods here! Probably your solution belongs here.
+      /**
+       * Finds the center(s) of a tree represented by this graph.
+       * A center is defined as a vertex with minimum eccentricity, which is the maximum distance to any other vertex.
+       * This method assumes that the graph represents a tree: it is connected and has no cycles.
+       *
+       * @return A list of center vertices.
+       */
+      public List<Vertex> findCenter() {
+         List<Vertex> leafNodes = new ArrayList<>();
+         List<Vertex> nonLeafNodes = new ArrayList<>();
+
+         //  Separate leaf nodes and non-leaf nodes
+         Vertex v = first;
+         while (v != null) {
+            int neighborCount = 0;
+            Arc a = v.first;
+            while (a != null) {
+               neighborCount++;
+               a = a.next;
+            }
+            if (neighborCount == 1) {
+               leafNodes.add(v);
+            } else {
+               nonLeafNodes.add(v);
+            }
+            v = v.next;
+         }
+
+         // Remove leaf nodes iteratively until 1 or 2 nodes remain
+         while (nonLeafNodes.size() > 2) {
+            List<Vertex> newLeafNodes = new ArrayList<>();
+            for (Vertex leaf : leafNodes) {
+               Arc arc = leaf.first;
+               Vertex neighbor = arc.target;
+               Arc prevArc = null;
+               Arc currentArc = neighbor.first;
+               int neighborCount = 0;
+               while (currentArc != null) {
+                  if (currentArc.target == leaf) {
+                     if (prevArc == null) {
+                        neighbor.first = currentArc.next;
+                     } else {
+                        prevArc.next = currentArc.next;
+                     }
+                  } else {
+                     neighborCount++;
+                     prevArc = currentArc;
+                  }
+                  currentArc = currentArc.next;
+               }
+               if (neighborCount == 1) {
+                  newLeafNodes.add(neighbor);
+               }
+            }
+            leafNodes = newLeafNodes;
+            nonLeafNodes.removeAll(leafNodes);
+         }
+
+         // Return the center(s) of the tree
+         return nonLeafNodes;
+      }
    }
 
 } 
